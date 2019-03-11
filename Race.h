@@ -12,7 +12,7 @@ enum raceState {
 };
 
 static const char *raceState_STRING[] = {
-    "Aborted", "ReadyToRace", "Starting", "Going", "Finished"
+    "Aborted", "Ready", "Steady", "Go", "Finished"
 };
 
 class Race {

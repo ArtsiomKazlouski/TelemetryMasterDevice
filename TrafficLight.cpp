@@ -30,6 +30,12 @@ void TrafficLight::refresh(){
 
   int beforeStart = this->startAt - millis() + 1000;    
   int count = this->mod - 1 - (beforeStart/1000);
+
+  if(count>=this->mod){
+    this->reset();
+    return;
+  }
+  
   for (int i = 0; i < this->mod; i++) {        
     if(count >= i){
       digitalWrite(pins[i], HIGH); 
