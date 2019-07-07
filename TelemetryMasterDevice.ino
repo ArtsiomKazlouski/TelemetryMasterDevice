@@ -1,70 +1,71 @@
-#include <Wire.h>
-#include <LiquidCrystal_I2C.h>
+#include <SoftwareSerial.h>
 
-#include "Button.h"
-#include "Race.h"
 #include "TrafficLight.h"
 
-Race race;
-unsigned long time;
-byte sc_beat;
-long lcdRefreshRate = 300;
-long lcdLastRefresh = 0;
 
-Button startButton = Button(12), stopButton = Button(13), finishButton = Button(8);
+unsigned long time;
+
+
 int x[] = {7, 6, 5, 4};
 TrafficLight trafficLight = TrafficLight(x, 4);
 
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+SoftwareSerial BTSerial(2, 3); // RX | TX
 
-void setup() {
-  race = Race();  
-  Serial.begin(9600);
-  lcd.begin();
-  lcd.backlight();
-  lcd.clear();
+#define PARSE_AMOUNT 2
+String intData[PARSE_AMOUNT];
+boolean recievedFlag;
+
+
+void setup() {  
+  Serial.begin(9600);  
+  BTSerial.begin(9600);
 }
-void loop() {
-  startButton.refresh();  
-  race.refresh();
-  trafficLight.refresh();   
-
-  if(race.getState() == ReadyToRace && startButton.pressed()){
-    race.start();    
-    trafficLight.init(race.getStartTime());
-  }
-
+void loop() {  
   
+  trafficLight.refresh(); 
 
-  if(stopButton.pressed()){
-    race = Race();  
-    trafficLight.reset();
+  parsing();
+  if (recievedFlag) {
+    recievedFlag = false;
+    String command = intData[0];   
+    Serial.println(command);    
+    if(command == "syn"){   
+      unsigned long time = millis();
+      String reply = "ack:"+String(time);
+      Serial.println(reply);
+      
+      BTSerial.println(reply);
+    }
+    if(command == "start"){
+      unsigned long startAt = atol(intData[1].c_str()); 
+      trafficLight.init(startAt);      
+    }
+  }  
+}
+
+boolean getStarted;
+byte index;
+String string_convert = "";
+void parsing() {
+  if (BTSerial.available() > 0) {
+    char incomingByte = BTSerial.read();        
+    if (getStarted) {                         
+      if (incomingByte != '$' && incomingByte != ';') {  
+        string_convert += incomingByte;       
+      } else {                                
+        intData[index] = string_convert;  
+        string_convert = "";                  
+        index++;                              
+      }
+    }
+    if (incomingByte == '^') {                      
+      getStarted = true;                      
+      index = 0;                              
+      string_convert = "";                    
+    }
+    if (incomingByte == ';') {                
+      getStarted = false;                     
+      recievedFlag = true;                    
+    }
   }
-
-  if(race.getState() == Going && finishButton.pressed()){
-    race.finish();
-  }
-
-  if(lcdLastRefresh+lcdRefreshRate<millis()){    
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("State: "); 
-    lcd.print(race.toString()); 
-    lcd.setCursor(0, 1);
-    lcd.print("Time: "); 
-    lcd.print(race.getDuration()/1000); 
-    lcdLastRefresh = millis();
-  }
-  
-
-
-  
-  Serial.print("Race state: ");
-  time = millis();
-  
-
-  Serial.print(race.toString()); //prints time since program started
-  Serial.print(" Race duratin: ");
-  Serial.println(race.getDuration());
-//  delay(1000);          // wait a second so as not to send massive amounts of data
 }
