@@ -6,7 +6,7 @@
 unsigned long time;
 
 
-int x[] = {7, 6, 5, 4};
+int x[] = {4, 5, 6, 7};
 TrafficLight trafficLight = TrafficLight(x, 4);
 
 SoftwareSerial BTSerial(2, 3); // RX | TX
@@ -38,7 +38,8 @@ void loop() {
     }
     if(command == "start"){
       unsigned long startAt = atol(intData[1].c_str()); 
-      trafficLight.init(startAt);      
+      trafficLight.init(startAt);    
+      Serial.println(startAt);  
     }
   }  
 }
